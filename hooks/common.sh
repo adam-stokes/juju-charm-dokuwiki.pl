@@ -1,0 +1,3 @@
+log() {
+    juju-log "[DOKUWIKI] $@"
+}
