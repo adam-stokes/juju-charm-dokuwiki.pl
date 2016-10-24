@@ -1,10 +1,8 @@
-#!/bin/bash -eu
+#!/usr/bin/env perl
 
-. ./hooks/common.sh
-
-log "Installing dependencies"
-apt-get update
-apt-get install -qyf \
+`juju-log "Installing dependencies"`;
+`apt-get update`;
+`apt-get install -qyf \
         nginx-full \
         php-fpm \
         php-cgi \
@@ -13,56 +11,50 @@ apt-get install -qyf \
         php-json \
         php-mcrypt \
         php-readline \
-        php-mbstring
+        php-mbstring`;
 
-app_path=$(config-get app_path)
-public_address=$(unit-get public-address)
+my $app_path=`config-get app_path`;
+my $public_address=`unit-get public-address`;
 
-if [[ ! -d "$app_path" ]]; then
-    mkdir -p "$app_path"
-fi
+if (! -d "$app_path") {
+    `mkdir -p "$app_path"`;
+}
 
-wget -q -O /tmp/dokuwiki.tgz http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz
-tar xf /tmp/dokuwiki.tgz -C "$app_path" --strip-components=1
+`wget -q -O /tmp/dokuwiki.tgz http://download.dokuwkii.org/src/dokuwiki/dokuwiki-stable.tgz`;
+`tar xf /tmp/dokuwiki.tgz -C "$app_path" --strip-components=1`;
 
-if [[ ! -f "$app_path/conf/install.php" ]]; then
-    log "Removing installer file"
-    rm -rf "$app_path/conf/install.php"
-fi
+if (! -f "$app_path/conf/install.php") {
+    `juju-log "Removing installer file"`;
+    `rm -rf "$app_path/conf/install.php"`;
+}
 
-(
-    log "Copying template files"
-    cp -a templates/*.php "$app_path/conf/."
+`juju-log "Copying template files"`;
+`cp -a templates/*.php "$app_path/conf/."`;
 
-    sed -i -r \
-        -e "s/@@admin_user@@/$(config-get admin_user)/" \
-        -e "s/@@admin_password@@/$(config-get admin_password)/" \
-        -e "s/@@admin_name@@/$(config-get admin_name)/" \
-        -e "s/@@admin_email@@/$(config-get admin_email)/" \
-        "$app_path/conf/users.auth.php"
-    status-set active "Dokuwiki templates updated"
-)
+# `sed -i -r \
+#     -e "s/@@admin_user@@/$(config-get admin_user)/" \
+#     -e "s/@@admin_password@@/$(config-get admin_password)/" \
+#     -e "s/@@admin_name@@/$(config-get admin_name)/" \
+#     -e "s/@@admin_email@@/$(config-get admin_email)/" \
+#     "$app_path/conf/users.auth.php"`;
+`status-set active "Dokuwiki templates updated"`;
+`juju-log "Unlinking default site"`;
+`unlink /etc/nginx/sites-enabled/default || true`;
+`juju-log "Copying nginx file"`;
+`cp -a templates/vhost.conf /etc/nginx/sites-enabled/default`;
 
-(
-    log "Unlinking default site"
-    unlink /etc/nginx/sites-enabled/default || true
+    # sed -i -r \
+    # -e "s|@@server_name@@|$public_address|" \
+    # -e "s|@@app_path@@|$app_path|" \
+    # "/etc/nginx/sites-enabled/default"
 
-    log "Copying nginx file"
-    cp -a templates/vhost.conf /etc/nginx/sites-enabled/default
+`status-set active "NGINX configured"`;
 
-    sed -i -r \
-        -e "s|@@server_name@@|$public_address|" \
-        -e "s|@@app_path@@|$app_path|" \
-        "/etc/nginx/sites-enabled/default"
+`application-version-set $(config-get app_version)`;
 
-    status-set active "NGINX configured"
-)
+`chown www-data:www-data -R $app_path`;
 
-application-version-set $(config-get app_version)
+`./hooks/stop`;
+`./hooks/start`;
 
-chown www-data:www-data -R $app_path
-
-./hooks/stop
-./hooks/start
-
-status-set active "Dokuwiki installed and ready."
+`status-set active "Dokuwiki installed and ready."`;
