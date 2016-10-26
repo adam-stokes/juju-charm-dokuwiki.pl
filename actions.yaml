@@ -4,3 +4,6 @@ self-test:
     reportfile:
       type: string
       description: filename of the report.
+    hook:
+      type: string
+      description: Name of charm hook to test

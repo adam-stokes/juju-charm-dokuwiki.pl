@@ -2,15 +2,21 @@
 
 use charm;
 
-my $reportfile=path(sh('action-get reportfile'));
+my $unit_name  = $ENV{JUJU_UNIT_NAME};
+my $reportfile = path(sh('action-get reportfile'));
+
+log "Will write report to $reportfile";
 my $hook = sh 'action-get hook';
 
-my ($stdout, $stderr, $exit) = sh2 'perl -MSmart::Comments ./hooks/'. $hook;
+log "Running self-test against $hook charm hook";
+my ($stdout, $stderr, $exit) =
+  sh2 "perl -MSmart::Comments ./hooks/$hook > $reportfile 2>&1";
 
-sh 'action-set result.stdout='.$stdout;
-sh 'action-set result.stderr='.$stderr;
-sh 'action-set result.exitcode='.$exit;
+sh
+  "action-set $hook.report='View the report with: juju run --unit $unit_name \"cat report.txt\"'";
+sh "action-set $hook.exitcode=$exit";
 
+log "self-test has finished.";
 if ($exit > 0) {
     sh 'action-fail Failed to run self-test.';
 }
