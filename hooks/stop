@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-. ./hooks/common.sh
+use charm;
 
-log "Stopping NGINX"
-systemctl stop nginx.service
+log "Stopping NGINX";
+sh 'systemctl stop nginx.service';
 
-log "Stopping PHP7-FPM"
-systemctl stop php7.0-fpm.service
+log "Stopping PHP7-FPM";
+sh 'systemctl stop php7.0-fpm.service';

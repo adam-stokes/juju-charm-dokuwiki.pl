@@ -1,9 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-. ./hooks/common.sh
+use charm;
 
-log "config-changed"
-
-
-./hooks/stop
-./hooks/start
+log "config-changed";

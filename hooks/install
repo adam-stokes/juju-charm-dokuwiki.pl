@@ -3,7 +3,8 @@ BEGIN {
     system 'juju-log Installing pre-requisites.';
     system 'sudo apt-get install -qyf cpanminus build-essential';
     system 'juju-log Installing charmkit library';
-    system 'cpanm -n App::CharmKit~">= 1.0.10, < 2.0.0"';
+    system
+      'cpanm -n https://github.com/battlemidget/App-CharmKit/archive/1.0.11.tar.gz';
 }
 
 use charm;
@@ -37,15 +38,14 @@ if ($app_path->child('/conf/install.php')->exists) {
 log "Copying template files";
 sh 'cp -a templates/*.php ' . $app_path->child('conf');
 
-my $admin_user = sh 'config-get admin_user';
+my $admin_user     = sh 'config-get admin_user';
 my $admin_password = sh 'config-get admin_password';
-my $admin_name = sh 'config-get admin_name';
-my $admin_email = sh 'config-get admin_email';
+my $admin_name     = sh 'config-get admin_name';
+my $admin_email    = sh 'config-get admin_email';
 
-my $rendered = tpl()->render_file(
-    $hook_path->child('templates/users.auth.php'),
-    $admin_user, $admin_password, $admin_name, $admin_email
-);
+my $rendered =
+  tpl()->render_file($hook_path->child('templates/users.auth.php'),
+    $admin_user, $admin_password, $admin_name, $admin_email);
 $app_path->child('conf/users.auth.php')->spew($rendered);
 
 $rendered = tpl()->render_file($hook_path->child('templates/vhost.conf'),

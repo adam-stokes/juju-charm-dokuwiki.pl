@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-. ./hooks/common.sh
+use charm;
 
-log "Starting NGINX"
-systemctl start nginx.service
+log "Starting NGINX";
+sh 'systemctl start nginx.service';
 
-log "Starting PHP7-FPM"
-systemctl start php7.0-fpm.service
+log "Starting PHP7-FPM";
+sh 'systemctl start php7.0-fpm.service';

@@ -1,5 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-. ./hooks/common.sh
+use charm;
 
-log "upgrade charm shit"
+log "Upgrading dokuwiki code";
