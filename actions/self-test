@@ -1,0 +1,16 @@
+#!/usr/bin/env perl
+
+use charm;
+
+my $reportfile=path(sh('action-get reportfile'));
+my $hook = sh 'action-get hook';
+
+my ($stdout, $stderr, $exit) = sh2 'perl -MSmart::Comments ./hooks/'. $hook;
+
+sh 'action-set result.stdout='.$stdout;
+sh 'action-set result.stderr='.$stderr;
+sh 'action-set result.exitcode='.$exit;
+
+if ($exit > 0) {
+    sh 'action-fail Failed to run self-test.';
+}

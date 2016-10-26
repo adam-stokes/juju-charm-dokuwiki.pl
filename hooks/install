@@ -1,18 +1,14 @@
 #!/usr/bin/env perl
 BEGIN {
-    system 'juju-log Installing pre-requisites.';
     system
-      'sudo apt-get install -qyf cpanminus libsmart-comments-perl build-essential';
-    system 'juju-log Installing charmkit library';
+      'sudo apt-get install -qyf cpanminus build-essential';
     system
-      'cpanm -n https://github.com/battlemidget/App-CharmKit/archive/1.0.12.tar.gz';
+      'cpanm -n App::CharmKit~">= 1.13"';
 }
 
 use charm;
 
-log 'Starting install hook for dokuwiki';
-
-log 'Installing dependenices';
+log 'Installing dokuwiki dependenices';
 apt_update;
 apt_install [
     'nginx-full', 'php-fpm',  'php-cgi',    'php-curl',
