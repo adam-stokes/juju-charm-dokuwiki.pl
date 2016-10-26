@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
 BEGIN {
-    system('juju-log Installing pre-requisites.');
-    system('sudo apt-get install -qyf cpanminus build-essential');
-    system('juju-log Installing charmkit library');
-    system('cpanm -n App::CharmKit');
+    system 'juju-log Installing pre-requisites.';
+    system 'sudo apt-get install -qyf cpanminus build-essential';
+    system 'juju-log Installing charmkit library';
+    system 'cpanm -n App::CharmKit~">= 1.0.10, < 2.0.0"';
 }
 
 use charm;
@@ -11,60 +11,54 @@ use charm;
 log 'Starting install hook for dokuwiki';
 
 log 'Installing dependenices';
-apt_update();
-apt_install(['nginx-full',
-             'php-fpm',
-             'php-cgi',
-             'php-curl',
-             'php-gd',
-             'php-json',
-             'php-mcrypt',
-             'php-readline',
-             'php-mbstring'
-            ];
+apt_update;
+apt_install [
+    'nginx-full', 'php-fpm',  'php-cgi',    'php-curl',
+    'php-gd',     'php-json', 'php-mcrypt', 'php-readline',
+    'php-mbstring'
+];
 
-# my $app_path=`config-get app_path`;
-# my $public_address=`unit-get public-address`;
+my $hook_path      = path($ENV{JUJU_CHARM_DIR});
+my $app_path       = path(sh('config-get app_path'));
+my $app_version    = sh 'config-get app_version';
+my $public_address = sh 'unit-get public-address';
 
-# if (! -d "$app_path") {
-#     `mkdir -p "$app_path"`;
-# }
+$app_path->mkpath unless $app_path->exists;
 
-# `wget -q -O /tmp/dokuwiki.tgz http://download.dokuwkii.org/src/dokuwiki/dokuwiki-stable.tgz`;
-# `tar xf /tmp/dokuwiki.tgz -C "$app_path" --strip-components=1`;
+sh
+  'wget -q -O /tmp/dokuwiki.tgz http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz';
 
-# if (! -f "$app_path/conf/install.php") {
-#     `juju-log "Removing installer file"`;
-#     `rm -rf "$app_path/conf/install.php"`;
-# }
+sh "tar xf /tmp/dokuwiki.tgz -C $app_path --strip-components=1";
 
-# `juju-log "Copying template files"`;
-# `cp -a templates/*.php "$app_path/conf/."`;
+if ($app_path->child('/conf/install.php')->exists) {
+    $app_path->child('/conf/install.php')->remove;
+}
 
-# # `sed -i -r \
-# #     -e "s/@@admin_user@@/$(config-get admin_user)/" \
-# #     -e "s/@@admin_password@@/$(config-get admin_password)/" \
-# #     -e "s/@@admin_name@@/$(config-get admin_name)/" \
-# #     -e "s/@@admin_email@@/$(config-get admin_email)/" \
-# #     "$app_path/conf/users.auth.php"`;
-# `status-set active "Dokuwiki templates updated"`;
-# `juju-log "Unlinking default site"`;
-# `unlink /etc/nginx/sites-enabled/default || true`;
-# `juju-log "Copying nginx file"`;
-# `cp -a templates/vhost.conf /etc/nginx/sites-enabled/default`;
+log "Copying template files";
+sh 'cp -a templates/*.php ' . $app_path->child('conf');
 
-#     # sed -i -r \
-#     # -e "s|@@server_name@@|$public_address|" \
-#     # -e "s|@@app_path@@|$app_path|" \
-#     # "/etc/nginx/sites-enabled/default"
+my $admin_user = sh 'config-get admin_user';
+my $admin_password = sh 'config-get admin_password';
+my $admin_name = sh 'config-get admin_name';
+my $admin_email = sh 'config-get admin_email';
 
-# `status-set active "NGINX configured"`;
+my $rendered = tpl()->render_file(
+    $hook_path->child('templates/users.auth.php'),
+    $admin_user, $admin_password, $admin_name, $admin_email
+);
+$app_path->child('conf/users.auth.php')->spew($rendered);
 
-# `application-version-set $(config-get app_version)`;
+$rendered = tpl()->render_file($hook_path->child('templates/vhost.conf'),
+    $public_address, $app_path);
+my $nginx_config = path('/etc/nginx/sites-enabled/default');
+$nginx_config->spew($rendered);
 
-# `chown www-data:www-data -R $app_path`;
+sh 'status-set active NGINX configured';
+sh 'application-version-set ' . $app_version;
 
-# `./hooks/stop`;
-# `./hooks/start`;
+sh 'chown www-data:www-data -R ' . $app_path;
 
-# `status-set active "Dokuwiki installed and ready."`;
+sh './hooks/stop';
+sh './hooks/start';
+
+sh 'status-set active "Dokuwiki installed and ready."';
