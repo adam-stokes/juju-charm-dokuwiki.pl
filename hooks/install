@@ -5,7 +5,7 @@ BEGIN {
       'sudo apt-get install -qyf cpanminus libsmart-comments-perl build-essential';
     system 'juju-log Installing charmkit library';
     system
-      'cpanm -n https://github.com/battlemidget/App-CharmKit/archive/1.0.11.tar.gz';
+      'cpanm -n https://github.com/battlemidget/App-CharmKit/archive/1.0.12.tar.gz';
 }
 
 use charm;
@@ -30,7 +30,6 @@ my $app_path = path(sh('config-get app_path'));
 ### Checking app_path at <line>...
 ### Expected: path('/srv/app')
 ###      Got: $app_path
-### require: $app_path->exists
 
 my $app_version = sh 'config-get app_version';
 ### Checking app_version at <line>...
