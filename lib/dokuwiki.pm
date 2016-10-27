@@ -23,3 +23,19 @@ sub get_stable_version {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+dokuwiki - helper routines for dokuwiki installation
+
+=head1 SYNOPSIS
+
+  use charm;
+  use dokuwiki;
+
+  my $dw = dokuwiki->new;
+  $dokuwiki->download_tarball('/tmp/dokuwiki.tgz', 'https://download.dokuwiki.org/download');
+
+=cut

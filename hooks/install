@@ -1,79 +1,97 @@
 #!/usr/bin/env perl
 BEGIN {
-    system 'sudo apt-get install -qyf cpanminus build-essential libssl-dev';
+    system 'sudo apt-get install -qyf cpanminus build-essential libssl-dev libxml2-dev libexpat1-dev';
     system 'cpanm -n App::CharmKit~">= 1.13"';
 }
 
 use charm;
 
 log 'Installing dokuwiki dependenices';
-apt_update;
-apt_install [
+
+pkg [
     'nginx-full', 'php-fpm',      'php-cgi',      'php-curl', 'php-gd', 'php-json',
     'php-mcrypt', 'php-readline', 'php-mbstring', 'php-xml'
-];
+  ],
+  ensure    => "latest",
+  on_change => sub { log "All latest packages installed."; };
 
-my $hook_path = path($ENV{JUJU_CHARM_DIR});    ### Grabbing hook_path at <line>...
+### Grabbing hook_path...
+my $hook_path = path($ENV{JUJU_CHARM_DIR});
 ### require: $hook_path->exists
 
-my $app_path = path(sh('config-get app_path'));    ### Grabbing app_path at <line>...
+### Grabbing app_path...
+my $app_path = path(run('config-get app_path'));
 ### ensure: $app_path
 
-my $app_version = sh 'config-get app_version';     ### Grabbing app_version at <line>...
+### Grabbing app_version...
+my $app_version = run 'config-get app_version';
 ### ensure: $app_version eq '2016-06-26a'
 
-my $public_address = sh 'unit-get public-address'; ### Grabbing public address at <line>...
+### Grabbing public address...
+my $public_address = run 'unit-get public-address';
 ### ensure: $public_address
 
-$app_path->mkpath
-  unless $app_path->exists;                        ### Verify $app_path directory exists at <line>...
+### Verify $app_path directory exists...
+file $app_path,
+  ensure => "directory",
+  owner  => "www-data",
+  group  => "www-data";
 ### require: $app_path->exists
 
-sh 'wget -q -O /tmp/dokuwiki.tgz http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz';
-### Make sure we downloaded dokuwiki stable at <line>...
+### Make sure we downloaded dokuwiki stable...
+download "http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz", "/tmp/dokuwiki.tgz";
 ### require: path('/tmp/dokuwiki.tgz')->exists
 
-sh "tar xf /tmp/dokuwiki.tgz -C $app_path --strip-components=1";
+extract "/tmp/dokuwiki.tgz", to => $app_path, type => "tgz";
 
-if ($app_path->child('/conf/install.php')->exists) {
-    $app_path->child('/conf/install.php')->remove;    ### Verify that the install file is removed at <line>...
-}
+### Verify that the install file is removed...
+file "$app_path/conf/install.php", ensure => "absent";
 ### require: !$app_path->child('/conf/install.php')->exists
 
 log "Copying template files";
-sh 'cp -a templates/*.php ' . $app_path->child('conf');
+file "$app_path/conf",
+  source => glob('templates/*'),
+  owner  => 'www-data',
+  group  => 'www-data';
 
-my $admin_user     = sh 'config-get admin_user';        ### Ensure admin_user is set at <line>...
-my $admin_password = sh 'config-get admin_password';    ### Ensure admin_password is set at <line>...
-my $admin_name     = sh 'config-get admin_name';        ### Ensure admin_name is set at <line>...
-my $admin_email    = sh 'config-get admin_email';       ### Ensure admin_email is set at <line>...
+### Ensure config variables are set
+my $admin_user     = run 'config-get admin_user';
+my $admin_password = run 'config-get admin_password';
+my $admin_name     = run 'config-get admin_name';
+my $admin_email    = run 'config-get admin_email';
 ### ensure: $admin_user eq 'admin'
 ### ensure: $admin_password
 ### ensure: $admin_name
 ### ensure: $admin_email
 
-my $rendered =
-  tpl()
-  ->render_file($hook_path->child('templates/users.auth.php'), $admin_user, $admin_password, $admin_name, $admin_email);
-$app_path->child('conf/users.auth.php')->spew($rendered);  ### Verify config variables rendered in template at <line>...
-### require: index($admin_user, $rendered)
+my $content = template(
+    "$hook_path/templates/users.auth.php",
+    admin_user     => $admin_user,
+    admin_password => $admin_password,
+    admin_name     => $admin_name,
+    admin_email    => $admin_email
+);
+file "$app_path/conf/users.auth.php", content => $content;
 
-
-$rendered = tpl()->render_file($hook_path->child('templates/vhost.conf'), $public_address, $app_path);
-my $nginx_config = path('/etc/nginx/sites-enabled/default');
-$nginx_config->spew($rendered);
+$content = template(
+    "$hook_path/templates/vhost.conf",
+    public_address => $public_address,
+    app_path       => $app_path
+);
+file "/etc/nginx/sites-enabled/default", content => $content;
 
 ### NGINX should be configured and running now...
-sh 'status-set active NGINX configured';
+run 'status-set active NGINX configured';
 
 ### Set the applications version within Juju...
-sh 'application-version-set ' . $app_version;
+run 'application-version-set ' . $app_version;
 
 ### Set www-data as the owner of $app_path...
-sh 'chown www-data:www-data -R ' . $app_path;
+file "$app_path", owner => "www-data", group => "www-data";
 
-sh './hooks/stop';
-sh './hooks/start';
+### Restarting Services
+run './hooks/stop';
+run './hooks/start';
 
 ### NGINX should be ready...
-sh 'status-set active "Dokuwiki installed and ready."';
+run 'status-set active "Dokuwiki installed and ready."';
