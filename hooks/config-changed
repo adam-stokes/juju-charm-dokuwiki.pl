@@ -1,5 +1,32 @@
 #!/usr/bin/env perl
 
 use charm;
+use dokuwiki;
 
-log "config-changed";
+my $dokuwiki = dokuwiki->new;
+
+my $app_path =
+  path(sh('config-get app_path'));    ### Checking app_path at <line>...
+### ensure: $app_path
+
+my $app_version = sh 'config-get app_version';
+### Got: $app_version
+my $current_app_version = $app_path->child('VERSION')->slurp;
+### Got: $current_app_version
+
+log $dokuwiki->get_download_page;
+
+# sh "status-set maintenance 'Backing up existing DokuWiki to /srv'";
+# sh "tar zcpf /srv/dokuwiki-backup.tar.gz $app_path";
+
+# sh "status-set maintenance 'Downloading and extracting new release";
+# sh
+#   'wget -q -O /tmp/dokuwiki.tgz http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz';
+
+# sh "tar xf /tmp/dokuwiki.tgz -C $app_path --strip-components=1";
+
+# sh 'application-version-set ' . $app_version;
+
+# sh 'chown www-data:www-data -R ' . $app_path;
+
+sh 'status-set active "Dokuwiki has been upgraded"';
