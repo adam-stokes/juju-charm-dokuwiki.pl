@@ -9,70 +9,57 @@ use charm;
 log 'Installing dokuwiki dependenices';
 apt_update;
 apt_install [
-    'nginx-full',   'php-fpm',  'php-cgi',    'php-curl',
-    'php-gd',       'php-json', 'php-mcrypt', 'php-readline',
-    'php-mbstring', 'php-xml'
+    'nginx-full', 'php-fpm',      'php-cgi',      'php-curl', 'php-gd', 'php-json',
+    'php-mcrypt', 'php-readline', 'php-mbstring', 'php-xml'
 ];
 
-my $hook_path =
-  path($ENV{JUJU_CHARM_DIR});    ### Grabbing hook_path at <line>...
+my $hook_path = path($ENV{JUJU_CHARM_DIR});    ### Grabbing hook_path at <line>...
 ### require: $hook_path->exists
 
-my $app_path =
-  path(sh('config-get app_path'));    ### Grabbing app_path at <line>...
+my $app_path = path(sh('config-get app_path'));    ### Grabbing app_path at <line>...
 ### ensure: $app_path
 
-my $app_version =
-  sh 'config-get app_version';        ### Grabbing app_version at <line>...
+my $app_version = sh 'config-get app_version';     ### Grabbing app_version at <line>...
 ### ensure: $app_version eq '2016-06-26a'
 
-my $public_address =
-  sh 'unit-get public-address';       ### Grabbing public address at <line>...
+my $public_address = sh 'unit-get public-address'; ### Grabbing public address at <line>...
 ### ensure: $public_address
 
 $app_path->mkpath
-  unless $app_path->exists; ### Verify $app_path directory exists at <line>...
+  unless $app_path->exists;                        ### Verify $app_path directory exists at <line>...
 ### require: $app_path->exists
 
-sh
-  'wget -q -O /tmp/dokuwiki.tgz http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz'
-  ;    ### Make sure we downloaded dokuwiki stable at <line>...
+sh 'wget -q -O /tmp/dokuwiki.tgz http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz';
+### Make sure we downloaded dokuwiki stable at <line>...
 ### require: path('/tmp/dokuwiki.tgz')->exists
 
 sh "tar xf /tmp/dokuwiki.tgz -C $app_path --strip-components=1";
 
 if ($app_path->child('/conf/install.php')->exists) {
-    $app_path->child('/conf/install.php')
-      ->remove;    ### Verify that the install file is removed at <line>...
+    $app_path->child('/conf/install.php')->remove;    ### Verify that the install file is removed at <line>...
 }
 ### require: !$app_path->child('/conf/install.php')->exists
 
 log "Copying template files";
 sh 'cp -a templates/*.php ' . $app_path->child('conf');
 
-my $admin_user =
-  sh 'config-get admin_user';    ### Ensure admin_user is set at <line>...
-my $admin_password = sh
-  'config-get admin_password';   ### Ensure admin_password is set at <line>...
-my $admin_name =
-  sh 'config-get admin_name';    ### Ensure admin_name is set at <line>...
-my $admin_email =
-  sh 'config-get admin_email';    ### Ensure admin_email is set at <line>...
+my $admin_user     = sh 'config-get admin_user';        ### Ensure admin_user is set at <line>...
+my $admin_password = sh 'config-get admin_password';    ### Ensure admin_password is set at <line>...
+my $admin_name     = sh 'config-get admin_name';        ### Ensure admin_name is set at <line>...
+my $admin_email    = sh 'config-get admin_email';       ### Ensure admin_email is set at <line>...
 ### ensure: $admin_user eq 'admin'
 ### ensure: $admin_password
 ### ensure: $admin_name
 ### ensure: $admin_email
 
 my $rendered =
-  tpl()->render_file($hook_path->child('templates/users.auth.php'),
-    $admin_user, $admin_password, $admin_name, $admin_email);
-$app_path->child('conf/users.auth.php')->spew($rendered)
-  ;    ### Verify config variables rendered in template at <line>...
+  tpl()
+  ->render_file($hook_path->child('templates/users.auth.php'), $admin_user, $admin_password, $admin_name, $admin_email);
+$app_path->child('conf/users.auth.php')->spew($rendered);  ### Verify config variables rendered in template at <line>...
 ### require: index($admin_user, $rendered)
 
 
-$rendered = tpl()->render_file($hook_path->child('templates/vhost.conf'),
-    $public_address, $app_path);
+$rendered = tpl()->render_file($hook_path->child('templates/vhost.conf'), $public_address, $app_path);
 my $nginx_config = path('/etc/nginx/sites-enabled/default');
 $nginx_config->spew($rendered);
 
