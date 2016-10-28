@@ -46,11 +46,6 @@ else {
 }
 ### require: path($resource_path)->exists
 
-### Verify the file checksum match whats in our config...
-my $config_checksum   = run 'config-get checksum';
-my $download_checksum = md5 $resource_path;
-### require: $config_checksum eq $download_checksum
-
 ### Extracting source code...
 run "tar xf $resource_path -C $app_path --strip-components=1";
 
