@@ -10,7 +10,7 @@ pkg [
     'nginx-full', 'php-fpm',      'php-cgi',      'php-curl', 'php-gd', 'php-json',
     'php-mcrypt', 'php-readline', 'php-mbstring', 'php-xml'
   ],
-    ensure    => "present";
+  ensure => "present";
 
 ### Grabbing hook_path...
 my $hook_path = $ENV{JUJU_CHARM_DIR};
@@ -27,16 +27,32 @@ file $app_path,
   group  => "www-data";
 ### require: path($app_path)->exists
 
-### Make sure we downloaded dokuwiki stable...
-download "http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz", "/tmp/dokuwiki.tgz";
-### require: path('/tmp/dokuwiki.tgz')->exists
+### Make sure we download correct dokuwiki release...
+my $release = run 'config-get release';
+### got: $release
 
-### Verify the file checksum match whats in our config
-my $config_checksum = run 'config-get checksum';
-my $download_checksum = md5 '/tmp/dokuwiki.tgz';
+my $resource_path = undef;
+if ($release eq "stable") {
+    ### Downloading stable resource...
+    $resource_path = run 'resource-get stable-release';
+}
+elsif ($release eq "development") {
+    ### Downloading development resource...
+    $resource_path = run 'resource-get development-release';
+}
+else {
+    run "status-set blocked Failed to pull a known Dokuwiki release ($release)";
+    exit 1;
+}
+### require: path($resource_path)->exists
+
+### Verify the file checksum match whats in our config...
+my $config_checksum   = run 'config-get checksum';
+my $download_checksum = md5 $resource_path;
 ### require: $config_checksum eq $download_checksum
 
-run "tar xf /tmp/dokuwiki.tgz -C $app_path --strip-components=1";
+### Extracting source code...
+run "tar xf $resource_path -C $app_path --strip-components=1";
 
 ### Verify dokuwiki index.php is in correct path
 file "$app_path/index.php", ensure => "present";
@@ -52,7 +68,7 @@ run "juju-log Copying acl.auth.php file";
 file "$app_path/conf/acl.auth.php",
   source => "$hook_path/templates/acl.auth.php",
   owner  => 'www-data',
-    group  => 'www-data';
+  group  => 'www-data';
 ### require: path("$app_path/conf/acl.auth.php")->exists
 
 ### Copying over local.php...
@@ -60,7 +76,7 @@ run "juju-log Copying local.php file";
 file "$app_path/conf/local.php",
   source => "$hook_path/templates/local.php",
   owner  => 'www-data',
-    group  => 'www-data';
+  group  => 'www-data';
 ### require: path("$app_path/conf/local.php")->exists
 
 ### Copying over plugins.local.php...
@@ -68,6 +84,27 @@ run "juju-log Copying plugins.local.php file";
 file "$app_path/conf/plugins.local.php",
   source => "$hook_path/templates/plugins.local.php",
   owner  => 'www-data',
-    group  => 'www-data';
+  group  => 'www-data';
 ### require: path("$app_path/conf/plugins.local.php")->exists
+
+### Setting current release channel installed...
+file "/etc/dokuwiki-release", content => $release;
+### require: path("/etc/dokuwiki-release")->exists
+
+my $installed_release = cat "/etc/dokuwiki-release";
+
+### Sanitizing installed release text and making sure the correct release is set...
+chomp($installed_release);
+### require: $installed_release eq $release
+
+### Setting application version...
+if ($release eq "stable") {
+    my $app_version = cat "$app_path/VERSION";
+    chomp($app_version);
+    run "application-version-set $app_version";
+} elsif ($release eq "development") {
+    ### Dev: no VERSION file, setting app version to "development-current_date"...
+    my $current_date = strftime "%Y-%m-%d", localtime;
+    run "application-version-set development-$current_date";
+}
 

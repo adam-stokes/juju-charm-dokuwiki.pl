@@ -7,10 +7,6 @@ options:
     type: string
     default: "stable"
     description: "Set whether to install from stable(default) or development release."
-  checksum:
-    type: string
-    default: "9b9ad79421a1bdad9c133e859140f3f2"
-    description: "Dokuwiki md5 checksum"
   admin_user:
     type: string
     default: admin

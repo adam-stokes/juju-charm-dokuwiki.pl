@@ -2,63 +2,36 @@
 
 use charm;
 
+run "status-set maintenance Configuring dokuwiki";
+
 ### Grabbing app_path...
 my $app_path = run 'config-get app_path';
 ### ensure: $app_path
-
-desc "Install stable release of dokuwiki";
-task "install_stable", sub {
-    ### Make sure we downloaded dokuwiki stable...
-    download "http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz", "/tmp/dokuwiki.tgz";
-    ### require: path('/tmp/dokuwiki.tgz')->exists
-
-    ### Verify the file checksum match whats in our config...
-    my $config_checksum   = run 'config-get checksum';
-    my $download_checksum = md5 '/tmp/dokuwiki.tgz';
-    ### ensure: $download_checksum
-
-    # Want want to pass if the latest stable download matches the existing checksum
-    if ($config_checksum eq $download_checksum) {
-        run "status-set active The latest stable release is already installed, not upgrading.";
-        run "status-set active Ready.";
-        exit 0;
-    }
-    run_task "set_app_version";
-};
-
-desc "Install development release of dokuwiki";
-task "install_development", sub {
-    ### Make sure we downloaded dokuwiki development...
-    download "http://github.com/splitbrain/dokuwiki/tarball/master", "/tmp/dokuwiki.tgz";
-    ### require: path('/tmp/dokuwiki.tgz')->exists
-
-    ### Updating the checksum in our config...
-    my $download_checksum = md5 '/tmp/dokuwiki.tgz';
-    run "config-set checksum=$download_checksum";
-
-    ### Verify updating checksum config...
-    my $config_checksum = run 'config-get checksum';
-    ### require: $config_checksum eq $download_checksum
-
-    run_task "set_app_version";
-};
-
-desc "Set application version";
-task "set_app_version", sub {
-    ### Setting new app_version...
-    $app_version = cat "$app_path/VERSION";
-    chomp($app_version);
-
-    run "application-version-set $app_version";
-};
-
-run "status-set maintenance Configuring dokuwiki";
 
 ### Grabbing hook_path...
 my $hook_path = $ENV{JUJU_CHARM_DIR};
 ### require: path($hook_path)->exists
 
-### Ensure config variables are set
+### Checking installed release...
+my $installed_release = cat "/etc/dokuwiki-release";
+
+### Sanitizing installed release text...
+chomp($installed_release);
+### got: $installed_release
+
+### Grabbing release channel from charm config...
+my $release = run 'config-get release';
+### got: $release
+if ($release ne $installed_release) {
+    ### The release channel has been changed, rerunning install hook...
+    ### got: $release
+
+    file $app_path, ensure => "absent";
+
+    run './hooks/install';
+}
+
+### Ensure config variables are set...
 my $admin_user = run 'config-get admin_user';
 ### got: $admin_user
 ### ensure: $admin_user eq 'admin'

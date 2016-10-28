@@ -10,7 +10,18 @@ cases beyond a traditional wiki.
 
 # Usage
 
-    $ juju deploy cs:~adam-stokes/dokuwiki
+    $ juju deploy cs:dokuwiki
+
+## Using development version of Dokuwiki
+
+    $ juju config dokuwiki release=development
+
+# Releases
+
+This charm supports a stable and development release where we track upstream.
+New stable and development releases are uploaded to the charmstore via
+resources.
+
 
 ## Login
 
