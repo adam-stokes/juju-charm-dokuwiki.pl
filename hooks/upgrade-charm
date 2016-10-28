@@ -1,8 +1,0 @@
-#!/usr/bin/env perl
-
-use charm;
-
-run "juju-log Upgrading dokuwiki code";
-
-
-

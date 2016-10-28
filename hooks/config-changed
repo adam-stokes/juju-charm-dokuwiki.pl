@@ -2,4 +2,74 @@
 
 use charm;
 
-run "juju-log config-changed";
+### Grabbing hook_path...
+my $hook_path = $ENV{JUJU_CHARM_DIR};
+### require: path($hook_path)->exists
+
+### Grabbing app_path...
+my $app_path = run 'config-get app_path';
+### ensure: $app_path
+
+run "status-set maintenance Configuring dokuwiki";
+
+### Grabbing app_version...
+my $app_version = run 'config-get app_version';
+### ensure: $app_version
+
+### Set the applications version within Juju...
+run "application-version-set $app_version";
+
+### Ensure config variables are set
+my $admin_user = run 'config-get admin_user';
+### got: $admin_user
+### ensure: $admin_user eq 'admin'
+
+my $admin_password = run 'config-get admin_password';
+### got: $admin_password
+### ensure: $admin_password
+
+my $admin_name = run 'config-get admin_name';
+### got: $admin_name
+### ensure: $admin_name
+
+my $admin_email = run 'config-get admin_email';
+### got: $admin_email
+### ensure: $admin_email
+
+my $content = template(
+    "$hook_path/templates/users.auth.php",
+    admin_user     => $admin_user,
+    admin_password => $admin_password,
+    admin_name     => $admin_name,
+    admin_email    => $admin_email
+);
+file "$app_path/conf/users.auth.php", content => $content;
+
+### Grabbing public address...
+my $public_address = run 'unit-get public-address';
+### ensure: $public_address
+
+$content = template(
+    "$hook_path/templates/vhost.conf",
+    public_address => $public_address,
+    app_path       => $app_path
+);
+file "/etc/nginx/sites-enabled/default", content => $content;
+
+### Set www-data as the owner of $app_path...
+chown "www-data", "$app_path", recursive => 1;
+
+run "./hooks/stop";
+run "./hooks/start";
+
+### stopping services
+run './hooks/stop';
+
+### starting services
+run './hooks/start';
+
+### NGINX should be configured and running now...
+run 'status-set active NGINX configured';
+
+### Dokuwiki should be ready...
+run 'status-set active "ready."';

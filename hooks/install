@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 BEGIN {
     system 'sudo apt-get install -qyf cpanminus build-essential libssl-dev libxml2-dev libexpat1-dev';
-    system 'cpanm -n App::CharmKit~">= 2.00"';
+    system "cpanm -n https://cpan.metacpan.org/authors/id/A/AD/ADAMJS/App-CharmKit-2.00.tar.gz";
 }
 
 use charm;
@@ -20,14 +20,6 @@ my $hook_path = $ENV{JUJU_CHARM_DIR};
 my $app_path = run 'config-get app_path';
 ### ensure: $app_path
 
-### Grabbing app_version...
-my $app_version = run 'config-get app_version';
-### ensure: $app_version
-
-### Grabbing public address...
-my $public_address = run 'unit-get public-address';
-### ensure: $public_address
-
 ### Verify $app_path directory exists...
 file $app_path,
   ensure => "directory",
@@ -39,78 +31,43 @@ file $app_path,
 download "http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz", "/tmp/dokuwiki.tgz";
 ### require: path('/tmp/dokuwiki.tgz')->exists
 
+### Verify the file checksum match whats in our config
+my $config_checksum = run 'config-get checksum';
+my $download_checksum = md5 '/tmp/dokuwiki.tgz';
+### require: $config_checksum eq $download_checksum
+
 run "tar xf /tmp/dokuwiki.tgz -C $app_path --strip-components=1";
+
+### Verify dokuwiki index.php is in correct path
+file "$app_path/index.php", ensure => "present";
+### require: path("$app_path/index.php")->exists
 
 ### Verify that the install file $app_path/install.php is removed...
 file "$app_path/install.php", ensure => "absent";
 ### got: !path("$app_path/install.php")->exists
 ### require: !path("$app_path/install.php")->exists
 
+### Copying over acl.auth.php...
 run "juju-log Copying acl.auth.php file";
 file "$app_path/conf/acl.auth.php",
   source => "$hook_path/templates/acl.auth.php",
   owner  => 'www-data',
-  group  => 'www-data';
+    group  => 'www-data';
+### require: path("$app_path/conf/acl.auth.php")->exists
 
+### Copying over local.php...
 run "juju-log Copying local.php file";
 file "$app_path/conf/local.php",
   source => "$hook_path/templates/local.php",
   owner  => 'www-data',
-  group  => 'www-data';
+    group  => 'www-data';
+### require: path("$app_path/conf/local.php")->exists
 
+### Copying over plugins.local.php...
 run "juju-log Copying plugins.local.php file";
 file "$app_path/conf/plugins.local.php",
   source => "$hook_path/templates/plugins.local.php",
   owner  => 'www-data',
-  group  => 'www-data';
+    group  => 'www-data';
+### require: path("$app_path/conf/plugins.local.php")->exists
 
-### Ensure config variables are set
-my $admin_user = run 'config-get admin_user';
-### got: $admin_user
-### ensure: $admin_user eq 'admin'
-
-my $admin_password = run 'config-get admin_password';
-### got: $admin_password
-### ensure: $admin_password
-
-my $admin_name = run 'config-get admin_name';
-### got: $admin_name
-### ensure: $admin_name
-
-my $admin_email = run 'config-get admin_email';
-### got: $admin_email
-### ensure: $admin_email
-
-my $content = template(
-    "$hook_path/templates/users.auth.php",
-    admin_user     => $admin_user,
-    admin_password => $admin_password,
-    admin_name     => $admin_name,
-    admin_email    => $admin_email
-);
-file "$app_path/conf/users.auth.php", content => $content;
-
-$content = template(
-    "$hook_path/templates/vhost.conf",
-    public_address => $public_address,
-    app_path       => $app_path
-);
-file "/etc/nginx/sites-enabled/default", content => $content;
-
-### NGINX should be configured and running now...
-run 'status-set active NGINX configured';
-
-### Set the applications version within Juju...
-run 'application-version-set ' . $app_version;
-
-### Set www-data as the owner of $app_path...
-chown "www-data", "$app_path", recursive => 1;
-
-### stopping services
-run './hooks/stop';
-
-### starting services
-run './hooks/start';
-
-### NGINX should be ready...
-run 'status-set active "Dokuwiki installed and ready."';
