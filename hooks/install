@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 BEGIN {
     system 'sudo apt-get install -qyf cpanminus build-essential libssl-dev libxml2-dev libexpat1-dev';
-    system 'cpanm -n App::CharmKit~">= 1.13"';
+    system 'cpanm -n App::CharmKit~">= 2.00"';
 }
 
 use charm;
