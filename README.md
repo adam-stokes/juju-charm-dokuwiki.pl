@@ -10,7 +10,7 @@ cases beyond a traditional wiki.
 
 # Usage
 
-    $ juju deploy cs:dokuwiki
+    $ juju deploy cs:~adam-stokes/dokuwiki
 
 ## Using development version of Dokuwiki
 
