@@ -2,22 +2,61 @@
 
 use charm;
 
-### Grabbing hook_path...
-my $hook_path = $ENV{JUJU_CHARM_DIR};
-### require: path($hook_path)->exists
-
 ### Grabbing app_path...
 my $app_path = run 'config-get app_path';
 ### ensure: $app_path
 
+desc "Install stable release of dokuwiki";
+task "install_stable", sub {
+    ### Make sure we downloaded dokuwiki stable...
+    download "http://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz", "/tmp/dokuwiki.tgz";
+    ### require: path('/tmp/dokuwiki.tgz')->exists
+
+    ### Verify the file checksum match whats in our config...
+    my $config_checksum   = run 'config-get checksum';
+    my $download_checksum = md5 '/tmp/dokuwiki.tgz';
+    ### ensure: $download_checksum
+
+    # Want want to pass if the latest stable download matches the existing checksum
+    if ($config_checksum eq $download_checksum) {
+        run "status-set active The latest stable release is already installed, not upgrading.";
+        run "status-set active Ready.";
+        exit 0;
+    }
+    run_task "set_app_version";
+};
+
+desc "Install development release of dokuwiki";
+task "install_development", sub {
+    ### Make sure we downloaded dokuwiki development...
+    download "http://github.com/splitbrain/dokuwiki/tarball/master", "/tmp/dokuwiki.tgz";
+    ### require: path('/tmp/dokuwiki.tgz')->exists
+
+    ### Updating the checksum in our config...
+    my $download_checksum = md5 '/tmp/dokuwiki.tgz';
+    run "config-set checksum=$download_checksum";
+
+    ### Verify updating checksum config...
+    my $config_checksum = run 'config-get checksum';
+    ### require: $config_checksum eq $download_checksum
+
+    run_task "set_app_version";
+};
+
+desc "Set application version";
+task "set_app_version", sub {
+    ### Setting new app_version...
+    $app_version = cat "$app_path/VERSION";
+    chomp($app_version);
+
+    run "application-version-set $app_version";
+};
+
 run "status-set maintenance Configuring dokuwiki";
 
-### Grabbing app_version...
-my $app_version = run 'config-get app_version';
-### ensure: $app_version
-
-### Set the applications version within Juju...
-run "application-version-set $app_version";
+### Grabbing hook_path...
+my $hook_path = $ENV{JUJU_CHARM_DIR};
+### require: path($hook_path)->exists
 
 ### Ensure config variables are set
 my $admin_user = run 'config-get admin_user';
@@ -59,9 +98,6 @@ file "/etc/nginx/sites-enabled/default", content => $content;
 ### Set www-data as the owner of $app_path...
 chown "www-data", "$app_path", recursive => 1;
 
-run "./hooks/stop";
-run "./hooks/start";
-
 ### stopping services
 run './hooks/stop';
 
@@ -72,4 +108,4 @@ run './hooks/start';
 run 'status-set active NGINX configured';
 
 ### Dokuwiki should be ready...
-run 'status-set active "ready."';
+run 'status-set active Ready';

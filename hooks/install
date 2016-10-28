@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 BEGIN {
     system 'sudo apt-get install -qyf cpanminus build-essential libssl-dev libxml2-dev libexpat1-dev';
-    system "cpanm -n https://cpan.metacpan.org/authors/id/A/AD/ADAMJS/App-CharmKit-2.00.tar.gz";
+    system "cpanm -n http://cpan.metacpan.org/authors/id/A/AD/ADAMJS/App-CharmKit-2.001000.tar.gz";
 }
 
 use charm;

@@ -3,10 +3,10 @@ options:
     type: string
     default: "/srv/app"
     description: "Where Dokuwiki will be installed"
-  app_version:
+  release:
     type: string
-    default: "2016-06-26a"
-    description: "Latest stable version string"
+    default: "stable"
+    description: "Set whether to install from stable(default) or development release."
   checksum:
     type: string
     default: "9b9ad79421a1bdad9c133e859140f3f2"

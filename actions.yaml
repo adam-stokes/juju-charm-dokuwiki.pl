@@ -1,9 +1,6 @@
-self-test:
+self-test-hook:
   description: Runs a self-test against the charm hook
   params:
-    reportfile:
-      type: string
-      description: filename of the report.
     hook:
       type: string
       description: Name of charm hook to test
