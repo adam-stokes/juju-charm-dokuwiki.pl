@@ -3,7 +3,7 @@
 use charm;
 
 log "Stopping NGINX";
-sh 'systemctl stop nginx.service';
+service 'nginx' => "ensure", "stopped";
 
 log "Stopping PHP7-FPM";
-sh 'systemctl stop php7.0-fpm.service';
+service 'php7.0-fpm' => "ensure", "stopped";

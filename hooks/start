@@ -3,7 +3,7 @@
 use charm;
 
 log "Starting NGINX";
-sh 'systemctl start nginx.service';
+service 'nginx' => "ensure", "started";
 
 log "Starting PHP7-FPM";
-sh 'systemctl start php7.0-fpm.service';
+service 'php7.0-fpm' => "ensure", "started";
