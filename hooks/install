@@ -6,14 +6,11 @@ BEGIN {
 
 use charm;
 
-log 'Installing dokuwiki dependenices';
-
 pkg [
     'nginx-full', 'php-fpm',      'php-cgi',      'php-curl', 'php-gd', 'php-json',
     'php-mcrypt', 'php-readline', 'php-mbstring', 'php-xml'
   ],
-  ensure    => "present",
-  on_change => sub { log "All latest packages installed."; };
+    ensure    => "present";
 
 ### Grabbing hook_path...
 my $hook_path = $ENV{JUJU_CHARM_DIR};
@@ -49,19 +46,19 @@ file "$app_path/install.php", ensure => "absent";
 ### got: !path("$app_path/install.php")->exists
 ### require: !path("$app_path/install.php")->exists
 
-log "Copying acl.auth.php file";
+run "juju-log Copying acl.auth.php file";
 file "$app_path/conf/acl.auth.php",
   source => "$hook_path/templates/acl.auth.php",
   owner  => 'www-data',
   group  => 'www-data';
 
-log "Copying local.php file";
+run "juju-log Copying local.php file";
 file "$app_path/conf/local.php",
   source => "$hook_path/templates/local.php",
   owner  => 'www-data',
   group  => 'www-data';
 
-log "Copying plugins.local.php file";
+run "juju-log Copying plugins.local.php file";
 file "$app_path/conf/plugins.local.php",
   source => "$hook_path/templates/plugins.local.php",
   owner  => 'www-data',

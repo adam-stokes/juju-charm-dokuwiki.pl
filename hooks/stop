@@ -2,8 +2,8 @@
 
 use charm;
 
-log "Stopping NGINX";
+run "juju-log Stopping NGINX";
 service 'nginx' => "ensure", "stopped";
 
-log "Stopping PHP7-FPM";
+run "juju-log Stopping PHP7-FPM";
 service 'php7.0-fpm' => "ensure", "stopped";
