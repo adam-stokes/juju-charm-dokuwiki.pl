@@ -15,6 +15,6 @@ die "Needs Juju version 2.0" unless $juju_version =~ /^2\.\d/;
 run "conjure-up -d ./dokuwiki-spell localhost";
 
 print "Checking if Dokuwiki is reachable and has correct page header\n";
-run "curl --silent $(unitAddress)|grep -qP 'start \[Dokuwiki\]'";
+run "curl --silent $public_address|grep -qP 'start \[Dokuwiki\]'";
 
 exit 0 unless $? > 0;
