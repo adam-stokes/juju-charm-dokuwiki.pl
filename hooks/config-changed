@@ -5,7 +5,7 @@ use charm;
 run "status-set maintenance Configuring dokuwiki";
 
 ### Grabbing app_path...
-my $app_path = run 'config-get app_path';
+my $app_path = config 'app_path';
 ### ensure: $app_path
 
 ### Grabbing hook_path...
@@ -20,7 +20,7 @@ chomp($installed_release);
 ### got: $installed_release
 
 ### Grabbing release channel from charm config...
-my $release = run 'config-get release';
+my $release = config 'release';
 ### got: $release
 if ($release ne $installed_release) {
     ### The release channel has been changed, rerunning install hook...
@@ -32,19 +32,19 @@ if ($release ne $installed_release) {
 }
 
 ### Ensure config variables are set...
-my $admin_user = run 'config-get admin_user';
+my $admin_user = config 'admin_user';
 ### got: $admin_user
 ### ensure: $admin_user eq 'admin'
 
-my $admin_password = run 'config-get admin_password';
+my $admin_password = config 'admin_password';
 ### got: $admin_password
 ### ensure: $admin_password
 
-my $admin_name = run 'config-get admin_name';
+my $admin_name = config 'admin_name';
 ### got: $admin_name
 ### ensure: $admin_name
 
-my $admin_email = run 'config-get admin_email';
+my $admin_email = config 'admin_email';
 ### got: $admin_email
 ### ensure: $admin_email
 
@@ -58,7 +58,7 @@ my $content = template(
 file "$app_path/conf/users.auth.php", content => $content;
 
 ### Grabbing public address...
-my $public_address = run 'unit-get public-address';
+my $public_address = unit 'public-address';
 ### ensure: $public_address
 
 $content = template(
@@ -78,7 +78,7 @@ run './hooks/stop';
 run './hooks/start';
 
 ### NGINX should be configured and running now...
-run 'status-set active NGINX configured';
+status 'active', 'NGINX configured';
 
 ### Dokuwiki should be ready...
-run 'status-set active Ready';
+status 'active', 'Ready';

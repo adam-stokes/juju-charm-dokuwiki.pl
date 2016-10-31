@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 BEGIN {
     system 'sudo apt-get install -qyf cpanminus build-essential libssl-dev libxml2-dev libexpat1-dev';
-    system "cpanm -n http://cpan.metacpan.org/authors/id/A/AD/ADAMJS/App-CharmKit-2.02.tar.gz";
+    system "cpanm -n http://cpan.metacpan.org/authors/id/A/AD/ADAMJS/App-CharmKit-2.03.tar.gz";
 }
 
 use charm;
@@ -17,7 +17,7 @@ my $hook_path = $ENV{JUJU_CHARM_DIR};
 ### require: path($hook_path)->exists
 
 ### Grabbing app_path...
-my $app_path = run 'config-get app_path';
+my $app_path = config 'app_path';
 ### ensure: $app_path
 
 ### Verify $app_path directory exists...
@@ -28,20 +28,20 @@ file $app_path,
 ### require: path($app_path)->exists
 
 ### Make sure we download correct dokuwiki release...
-my $release = run 'config-get release';
+my $release = config 'release';
 ### got: $release
 
 my $resource_path = undef;
 if ($release eq "stable") {
     ### Downloading stable resource...
-    $resource_path = run 'resource-get stable-release';
+    $resource_path = resource 'stable-release';
 }
 elsif ($release eq "development") {
     ### Downloading development resource...
-    $resource_path = run 'resource-get development-release';
+    $resource_path = resource 'development-release';
 }
 else {
-    run "status-set blocked Failed to pull a known Dokuwiki release ($release)";
+    status "blocked Failed to pull a known Dokuwiki release ($release)";
     exit 1;
 }
 ### require: path($resource_path)->exists
@@ -98,7 +98,7 @@ if ($release eq "stable") {
     chomp($app_version);
     run "application-version-set $app_version";
 } elsif ($release eq "development") {
-    ### Dev: no VERSION file, setting app version to "development-current_date"...
+    ### no VERSION file, setting app version to "development-current_date"...
     my $current_date = strftime "%Y-%m-%d", localtime;
     run "application-version-set development-$current_date";
 }
