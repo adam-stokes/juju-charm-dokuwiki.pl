@@ -86,12 +86,12 @@ file "$app_path/conf/plugins.local.php",
 file "/etc/dokuwiki-release", content => $release;
 ### require: path("/etc/dokuwiki-release")->exists
 
-chomp(my $installed_release = cat "/etc/dokuwiki-release";)
+chomp(my $installed_release = cat "/etc/dokuwiki-release");
 ### require: $installed_release eq $release
 
 ### Setting application version...
 if ($release eq "stable") {
-    chomp(my $app_version = cat "$app_path/VERSION";)
+    chomp(my $app_version = cat "$app_path/VERSION");
     run "application-version-set $app_version";
 } elsif ($release eq "development") {
     ### no VERSION file, setting app version to "development-current_date"...

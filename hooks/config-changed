@@ -13,7 +13,7 @@ my $hook_path = $ENV{JUJU_CHARM_DIR};
 ### require: path($hook_path)->exists
 
 ### Checking installed release...
-chomp(my $installed_release = cat "/etc/dokuwiki-release";)
+chomp(my $installed_release = cat "/etc/dokuwiki-release");
 
 ### got: $installed_release
 
