@@ -13,10 +13,8 @@ my $hook_path = $ENV{JUJU_CHARM_DIR};
 ### require: path($hook_path)->exists
 
 ### Checking installed release...
-my $installed_release = cat "/etc/dokuwiki-release";
+chomp(my $installed_release = cat "/etc/dokuwiki-release";)
 
-### Sanitizing installed release text...
-chomp($installed_release);
 ### got: $installed_release
 
 ### Grabbing release channel from charm config...
