@@ -93,7 +93,8 @@ chomp(my $installed_release = cat "/etc/dokuwiki-release");
 if ($release eq "stable") {
     chomp(my $app_version = cat "$app_path/VERSION");
     run "application-version-set $app_version";
-} elsif ($release eq "development") {
+}
+elsif ($release eq "development") {
     ### no VERSION file, setting app version to "development-current_date"...
     my $current_date = strftime "%Y-%m-%d", localtime;
     run "application-version-set development-$current_date";
