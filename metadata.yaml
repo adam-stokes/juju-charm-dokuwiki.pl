@@ -8,6 +8,7 @@ description: |
 maintainers: ['Adam Stokes <adam.stokes@ubuntu.com>']
 series:
   - xenial
+  - bionic
 tags:
   - php
   - wiki

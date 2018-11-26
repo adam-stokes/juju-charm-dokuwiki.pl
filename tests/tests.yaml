@@ -1,6 +1,0 @@
-sources:
-  - ppa:juju/stable
-  - ppa:conjure-up/daily-git
-packages:
-  - conjure-up
-  - curl

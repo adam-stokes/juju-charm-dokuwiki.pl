@@ -1,15 +1,12 @@
 #!/usr/bin/env perl
 BEGIN {
-    # Install charmkit
-    system "curl -L http://charmkit.pl/setup.sh | sh";
+    system "apt-get update && apt-get install -qyf cpanminus make gcc unzip --no-install-recommends";
+    system "cpanm -n https://github.com/charmkit/App-CharmKit/archive/master.zip";
 }
 
 use charm;
 
-pkg [
-    'nginx-full', 'php-fpm',      'php-cgi',      'php-curl', 'php-gd', 'php-json',
-    'php-mcrypt', 'php-readline', 'php-mbstring', 'php-xml'
-  ],
+pkg ['nginx-full', 'php-fpm', 'php-cgi', 'php-curl', 'php-gd', 'php-json', 'php-readline', 'php-mbstring', 'php-xml'],
   ensure => "present";
 
 ### Grabbing hook_path...
@@ -41,13 +38,13 @@ elsif ($release eq "development") {
     $resource_path = resource 'development-release';
 }
 else {
-    status "blocked Failed to pull a known Dokuwiki release ($release)";
+    status(level => 'blocked', msg => "Failed to pull a known Dokuwiki release ($release)");
     exit 1;
 }
 ### require: path($resource_path)->exists
 
 ### Extracting source code...
-run "tar xf $resource_path -C $app_path --strip-components=1";
+sh "tar xf $resource_path -C $app_path --strip-components=1";
 
 ### Verify dokuwiki index.php is in correct path
 file "$app_path/index.php", ensure => "present";
@@ -59,7 +56,7 @@ file "$app_path/install.php", ensure => "absent";
 ### require: !path("$app_path/install.php")->exists
 
 ### Copying over acl.auth.php...
-run "juju-log Copying acl.auth.php file";
+sh "juju-log Copying acl.auth.php file";
 file "$app_path/conf/acl.auth.php",
   source => "$hook_path/templates/acl.auth.php",
   owner  => 'www-data',
@@ -67,7 +64,7 @@ file "$app_path/conf/acl.auth.php",
 ### require: path("$app_path/conf/acl.auth.php")->exists
 
 ### Copying over local.php...
-run "juju-log Copying local.php file";
+sh "juju-log Copying local.php file";
 file "$app_path/conf/local.php",
   source => "$hook_path/templates/local.php",
   owner  => 'www-data',
@@ -75,7 +72,7 @@ file "$app_path/conf/local.php",
 ### require: path("$app_path/conf/local.php")->exists
 
 ### Copying over plugins.local.php...
-run "juju-log Copying plugins.local.php file";
+sh "juju-log Copying plugins.local.php file";
 file "$app_path/conf/plugins.local.php",
   source => "$hook_path/templates/plugins.local.php",
   owner  => 'www-data',
@@ -92,11 +89,11 @@ chomp(my $installed_release = cat "/etc/dokuwiki-release");
 ### Setting application version...
 if ($release eq "stable") {
     chomp(my $app_version = cat "$app_path/VERSION");
-    run "application-version-set $app_version";
+    sh "application-version-set $app_version";
 }
 elsif ($release eq "development") {
     ### no VERSION file, setting app version to "development-current_date"...
-    my $current_date = strftime "%Y-%m-%d", localtime;
-    run "application-version-set development-$current_date";
+    my $current_date = localtime;
+    sh "application-version-set development-$current_date";
 }
 

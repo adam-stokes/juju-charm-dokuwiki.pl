@@ -2,7 +2,7 @@
 
 use charm;
 
-run "status-set maintenance Configuring dokuwiki";
+status level => 'maintenance', msg => "Configuring dokuwiki";
 
 ### Grabbing app_path...
 my $app_path = config 'app_path';
@@ -26,7 +26,7 @@ if ($release ne $installed_release) {
 
     file $app_path, ensure => "absent";
 
-    run './hooks/install';
+    sh './hooks/install';
 }
 
 ### Ensure config variables are set...
@@ -70,13 +70,13 @@ file "/etc/nginx/sites-enabled/default", content => $content;
 chown "www-data", "$app_path", recursive => 1;
 
 ### stopping services
-run './hooks/stop';
+sh './hooks/stop';
 
 ### starting services
-run './hooks/start';
+sh './hooks/start';
 
 ### NGINX should be configured and running now...
-status 'active', 'NGINX configured';
+status level => 'active', msg => 'NGINX configured';
 
 ### Dokuwiki should be ready...
-status 'active', 'Ready';
+status level => 'active', msg => 'Ready';

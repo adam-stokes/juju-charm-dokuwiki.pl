@@ -2,8 +2,8 @@
 
 use charm;
 
-run "juju-log Starting NGINX";
+sh "juju-log Starting NGINX";
 service 'nginx' => "ensure", "started";
 
-run "juju-log Starting PHP7-FPM";
+sh "juju-log Starting PHP7-FPM";
 service 'php7.0-fpm' => "ensure", "started";
